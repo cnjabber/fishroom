@@ -22,8 +22,12 @@ def run_threads(thread_target_args: Iterable[Tuple[AnyFunc, AnyArgs]]):
 
     # wrapper to send report traceback info to telegram
     def die(f: AnyFunc):
-        tg = Telegram(config["telegram"]["token"])
         logger = get_logger(__name__)
+
+        if "telegram" not in config:
+            logger.info("No telegram configured.")
+        else:
+            tg = Telegram(config["telegram"]["token"])
 
         def send_all(text):
             for adm in config["telegram"]["admin"]:
