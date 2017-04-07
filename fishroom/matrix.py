@@ -78,7 +78,8 @@ class MatrixHandle(BaseBotInstance):
                 self.displaynames[sender] = u_send.get_display_name()
             sender = self.displaynames[sender]
 
-            if event['content']['msgtype'] == "m.text":
+            msgtype = event['content']['msgtype']
+            if msgtype == "m.text" or msgtype == "m.notice":
                 room_alias = self.room_id_to_alias[room.room_id]
                 date, time = get_now_date_time()
                 mtype = MessageType.Text
