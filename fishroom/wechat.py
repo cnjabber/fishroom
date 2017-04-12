@@ -22,6 +22,21 @@ logger = get_logger("WeChat")
 
 # TODO: Do not use global variables if we have better solutions
 wxHandle, wxRooms, wxRoomNicks, myUid = None, {}, {}, ''
+photo_store = None
+myself = config.get("myself")
+
+
+def upload_photo(data):
+    global photo_store
+
+    if not photo_store:
+        return None, "No photo store available"
+
+    url = photo_store.upload_image(filedata=data)
+    if url is None:
+        return None, "Failed to upload Image"
+
+    return url, None
 
 
 def log_message(msgtype, msg):
@@ -87,8 +102,12 @@ def on_picture_message(msg):
     log_message(PICTURE, msg)
     dlfn = msg["Text"]
     filename = msg["FileName"]
-    dlfn(downloadDir=filename)
-    logger.info("Picture saved to " + filename)
+    photo = dlfn()
+    url, err = upload_photo(photo)
+    if url is None:
+        logger.info("Failed to upload photo")
+    else:
+        handle_message(msg, url)
 
 
 @itchat.msg_register(RECORDING, isFriendChat=False, isGroupChat=True, isMpChat=False)
@@ -165,10 +184,12 @@ class WechatHandle(BaseBotInstance):
         itchat.send_image(fileDir=filename, toUserName=roomid, file_=data_io)
 
     def send_msg(self, target, content, sender=None, first=False, **kwargs):
-        logger.info("Sending message")
+        logger.info("Sending message to " + target)
         roomid = wxRoomNicks[target]
-        #itchat.send(msg="[{}] {}".format(sender,content), toUserName=target)
-        itchat.send(content, toUserName=roomid)
+        if sender is not None:
+            itchat.send(msg="[{}] {}".format(sender,content), toUserName=roomid)
+        else:
+            itchat.send(content, toUserName=roomid)
 
 
 def Wechat2FishroomThread(wx: WechatHandle, bus: MessageBus):
@@ -186,11 +207,31 @@ def Fishroom2WechatThread(wx: WechatHandle, bus: MessageBus):
         logger.info("Error creating Fishroom2WechatThread")
         return
     for msg in bus.message_stream():
+        logger.info("message opt from bus is: " + str(msg.opt))
+        if myself is not None:
+            myid_chn = myself.get(msg.channel)
+
+        if msg.opt is not None:
+            id_chn = msg.opt.get(msg.channel)
+
+        if myid_chn is not None and myid_chn == id_chn:
+            logger.info("message from " + id_chn + ", setting sender to None.")
+            msg.sender = None
         wx.forward_msg_from_fishroom(msg)
 
 
 def init():
-    global wxHandle
+    global photo_store, wxHandle
+
+    provider = config['photo_store']['provider']
+    if provider == "imgur":
+        options = config['photo_store']['options']
+        photo_store = Imgur(**options)
+    elif provider == "vim-cn":
+        photo_store = VimCN()
+    elif provider == "qiniu":
+        photo_store = get_qiniu(redis_client, config)
+
     redis_client = get_redis()
     im2fish_bus = MessageBus(redis_client, MsgDirection.im2fish)
     fish2im_bus = MessageBus(redis_client, MsgDirection.fish2im)
