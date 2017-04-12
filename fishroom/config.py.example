@@ -57,6 +57,12 @@ config = {
     # Uncomment these if you want WeChat access
     # 'wechat': {},
 
+    # Uncomment these to set your account for each service
+    # this is useful when you use youw own account as bot
+    'myself': {
+        'matrix': '@vimacs:matrixim.cc'
+    },
+
     # Optional, only if you use qiniu for file_store
     # Comment this out if you don't use qiniu
     'qiniu': {
