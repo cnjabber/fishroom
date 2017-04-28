@@ -15,8 +15,8 @@ class BaseFileStore(object):
 class LocalStore(BaseFileStore, BasePhotoStore):
 
     def __init__(self, path, base_url):
-        self.path = path.strip('/')+'/'
-        self.base_url = base_url.strip('/')+'/'
+        self.path = path.strip('/') + '/'
+        self.base_url = base_url.strip('/') + '/'
 
     def upload_image(self, filename=None, filedata=None, tag=None):
         if filedata is None:
@@ -41,11 +41,8 @@ class LocalStore(BaseFileStore, BasePhotoStore):
                 filedata = f.read()
 
         filehash = hashlib.blake2b(filedata, digest_size=20).hexdigest()
+        name = filehash
 
-        with BytesIO(filedata) as f:
-            ext = imghdr.what(f)
-
-        name = "%s.%s" % (filehash, ext)
         with open(self.path + name, 'wb') as fw:
             fw.write(filedata)
             fw.close()
