@@ -81,7 +81,8 @@ class MatrixHandle(BaseBotInstance):
             if sender not in self.displaynames.keys():
                 u_send = self.client.get_user(sender)
                 self.displaynames[sender] = u_send.get_display_name()
-            sender = self.displaynames[sender]
+            if self.displaynames[sender] is not None:
+                sender = self.displaynames[sender]
 
             msgtype = event['content']['msgtype']
             room_alias = self.room_id_to_alias[room.room_id]
